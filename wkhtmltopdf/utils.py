@@ -145,6 +145,7 @@ def wkhtmltopdf(pages, output=None, **kwargs):
 
     return check_output(ck_args, **ck_kwargs)
 
+
 def convert_to_pdf(filename, header_filename=None, footer_filename=None, cmd_options=None, cover_filename=None):
     # Clobber header_html and footer_html only if filenames are
     # provided. These keys may be in self.cmd_options as hardcoded
@@ -163,6 +164,7 @@ def convert_to_pdf(filename, header_filename=None, footer_filename=None, cmd_opt
     if footer_filename is not None:
         cmd_options['footer_html'] = footer_filename
     return wkhtmltopdf(pages=pages, **cmd_options)
+
 
 class RenderedFile(object):
     """
@@ -189,8 +191,9 @@ class RenderedFile(object):
         if self.temporary_file is not None:
             self.temporary_file.close()
 
+
 def render_pdf_from_template(input_template, header_template, footer_template, context, request=None, cmd_options=None,
-    cover_template=None):
+                             cover_template=None):
     # For basic usage. Performs all the actions necessary to create a single
     # page PDF from a single template and context.
     cmd_options = cmd_options if cmd_options else {}
@@ -235,6 +238,7 @@ def render_pdf_from_template(input_template, header_template, footer_template, c
                           cmd_options=cmd_options,
                           cover_filename=cover.filename if cover else None)
 
+
 def content_disposition_filename(filename):
     """
     Sanitize a file name to be used in the Content-Disposition HTTP
@@ -277,13 +281,19 @@ def pathname2fileurl(pathname):
 def make_absolute_paths(content):
     """Convert all MEDIA files into a file://URL paths in order to
     correctly get it displayed in PDFs."""
+    try:
+        from PlanoHero.settings import BASE_DIR
+        STATIC_ROOT = os.path.join(BASE_DIR, 'PlanoHero', 'static')
+    except (ImportError, ImportWarning):
+        STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
     overrides = [
         {
             'root': settings.MEDIA_ROOT,
             'url': settings.MEDIA_URL,
         },
         {
-            'root': settings.STATIC_ROOT,
+            'root': settings.STATIC_ROOT or STATIC_ROOT,
             'url': settings.STATIC_URL,
         }
     ]
@@ -301,11 +311,11 @@ def make_absolute_paths(content):
         occurences = list(set(occurences))  # Remove dups
         for occur in occurences:
             content = content.replace(occur, '"%s"' % (
-                                      pathname2fileurl(x['root']) +
-                                      occur[1 + len(x['url']): -1]))
-
+                    pathname2fileurl(x['root']) +
+                    occur[1 + len(x['url']): -1]))
 
     return content
+
 
 def render_to_temporary_file(template, context, request=None, mode='w+b',
                              bufsize=-1, suffix='.html', prefix='tmp',
